@@ -188,7 +188,7 @@ void TIM6_IRQHandler(void)
 		{
 			/*ÖØÖÃ*/
 			ms_Count = 0;
-			LED2_TOGGLE;
+			//LED2_TOGGLE;
 		}
 	}	
 }

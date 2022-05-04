@@ -43,8 +43,6 @@ void LED_GPIO_Config(void)
 	
 		/* 关闭所有led灯	*/
 		GPIO_SetBits(GPIOB, GPIO_Pin_0);
-		
-		/* 关闭所有led灯	*/
 		GPIO_SetBits(GPIOF, GPIO_Pin_7|GPIO_Pin_8);	 
 }
 /*********************************************END OF FILE**********************/

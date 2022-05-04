@@ -4,6 +4,7 @@
   * @author  liu xu
   * @version V1.0
   * @date    2022-5-3
+  * @node    移植FreeRTOS后，由于修改了系统时钟，自定义的精确延时函数Delay_us()暂无法使用
   ******************************************************************************/ 
 #include "stm32f10x.h"
 #include "bsp_led.h"
@@ -81,9 +82,8 @@ int main(void)
 {	
 	BSP_Init(); //外设初始化
 	
-	printf("\n\nDS18B20 + HCSR04 + NRF + MLX90614 + DHT11 + DS1302 + CAN + RTOS\n");
-	Delay_us(1000 * 1000);
-	
+	printf("\n\nDS18B20 + HCSR04 + NRF + MLX90614 + DHT11 + DS1302 + CAN + RTOS\n\n");
+
 	/*创建APP任务*/
 	AppTaskCreate_Handle = xTaskCreateStatic((TaskFunction_t)AppTaskCreate,
 											 (const char *)"AppTaskCreate", //任务名称
@@ -142,9 +142,11 @@ static void LED_Task(void *parameter)
 	while (1)
 	{
 		LED1_ON;
+		LED2_ON;
 		vTaskDelay(500); //延时500个tick
 
 		LED1_OFF;
+		LED2_OFF;
 		vTaskDelay(500); //延时500个tick
 	}
 }
