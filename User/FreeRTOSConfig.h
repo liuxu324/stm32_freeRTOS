@@ -103,7 +103,7 @@ extern uint32_t SystemCoreClock;
 /* 支持动态内存申请 */
 #define configSUPPORT_DYNAMIC_ALLOCATION	(1)
 /* 支持静态内存 */
-#define configSUPPORT_STATIC_ALLOCATION		(1)
+#define configSUPPORT_STATIC_ALLOCATION		(0)//使用动态内存时，需要置为0
 /* 系统所有总的堆大小 */
 //#define configTOTAL_HEAP_SIZE	((size_t)(17*1024))
 #define configTOTAL_HEAP_SIZE ((size_t)(36*1024)) 
