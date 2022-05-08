@@ -32,7 +32,8 @@
 /*创建任务句柄*/
 static TaskHandle_t AppTaskCreate_Handle = NULL;
 /*LED任务句柄*/
-static TaskHandle_t LED_Task_Handle = NULL;
+static TaskHandle_t LED1_Task_Handle = NULL;
+static TaskHandle_t LED2_Task_Handle = NULL;
 
 /********************** 内核对象句柄 *************************/
 /*
@@ -45,7 +46,8 @@ static TaskHandle_t LED_Task_Handle = NULL;
 
 /*************************** 函数声明 *****************************/
 static void AppTaskCreate(void); 				/*用于创建任务*/
-static void LED_Task(void *pvParameters);		/*LED_Task任务实现*/
+static void LED1_Task(void *pvParameters);		/*LED_Task任务实现*/
+static void LED2_Task(void *pvParameters);		/*LED_Task任务实现*/
 static void BSP_Init(void); 					/*初始化板载相关资源*/
 
 /* 主函数
@@ -88,21 +90,38 @@ static void AppTaskCreate(void)
 	/*进入临界区*/
 	taskENTER_CRITICAL();
 
-	/*创建LED_Task任务*/
-	xReturn = xTaskCreate((TaskFunction_t)LED_Task,	//任务函数
-						  (const char *)"LED_Task",	//任务名称
+	/*创建LED1_Task任务*/
+	xReturn = xTaskCreate((TaskFunction_t)LED1_Task,	//任务函数
+						  (const char *)"LED1_Task",	//任务名称
 						  (uint16_t)512, 			//任务堆栈大小
 						  (void *)NULL,				//传递给任务函数的参数
 						  (UBaseType_t)2,			//任务优先级
-						  (TaskHandle_t *)&LED_Task_Handle);	//任务控制块指针
+						  (TaskHandle_t *)&LED1_Task_Handle);	//任务控制块指针
 
 	if (pdPASS == xReturn)
 	{
-		printf("LED_Task 任务创建成功!\n");
+		printf("LED1_Task 任务创建成功!\n");
 	}
 	else
 	{
-		printf("LED_Task 任务创建失败!\n");
+		printf("LED1_Task 任务创建失败!\n");
+	}
+	
+	/*创建LED2_Task任务*/
+	xReturn = xTaskCreate((TaskFunction_t)LED2_Task,	//任务函数
+						  (const char *)"LED2_Task",	//任务名称
+						  (uint16_t)512, 			//任务堆栈大小
+						  (void *)NULL,				//传递给任务函数的参数
+						  (UBaseType_t)3,			//任务优先级
+						  (TaskHandle_t *)&LED2_Task_Handle);	//任务控制块指针
+
+	if (pdPASS == xReturn)
+	{
+		printf("LED2_Task 任务创建成功!\n");
+	}
+	else
+	{
+		printf("LED2_Task 任务创建失败!\n");
 	}
 
 	/*删除App任务*/
@@ -112,18 +131,29 @@ static void AppTaskCreate(void)
 	taskEXIT_CRITICAL();
 }
 
-/*LED 任务测试函数*/
-static void LED_Task(void *parameter)
+/*LED1 任务测试函数*/
+static void LED1_Task(void *parameter)
 {
 	while (1)
 	{
 		LED1_ON;
-		LED2_ON;
-		vTaskDelay(1000); //延时500个tick
+		vTaskDelay(500); //延时500个tick
 
 		LED1_OFF;
-		LED2_OFF;
 		vTaskDelay(500); //延时500个tick
+	}
+}
+
+/*LED2 任务测试函数*/
+static void LED2_Task(void *parameter)
+{
+	while (1)
+	{
+		LED2_ON;
+		vTaskDelay(1000); //延时1000个tick
+
+		LED2_OFF;
+		vTaskDelay(1000); //延时1000个tick
 	}
 }
 
