@@ -31,9 +31,16 @@
  */
 /*创建任务句柄*/
 static TaskHandle_t AppTaskCreate_Handle = NULL;
-/*LED任务句柄*/
-static TaskHandle_t LED1_Task_Handle = NULL;
-static TaskHandle_t LED2_Task_Handle = NULL;
+/*LED 任务句柄*/
+static TaskHandle_t Task_Handle_LED1 = NULL;
+static TaskHandle_t Task_Handle_LED2 = NULL;
+/*Key 任务句柄*/
+static TaskHandle_t Task_Handle_Key2 = NULL;
+static TaskHandle_t Task_Handle_Key3 = NULL;
+/*Usart 任务句柄*/
+static TaskHandle_t Task_Handle_Usart = NULL;
+/*Test 任务句柄*/
+static TaskHandle_t Task_Handle_Test = NULL;
 
 /********************** 内核对象句柄 *************************/
 /*
@@ -46,8 +53,12 @@ static TaskHandle_t LED2_Task_Handle = NULL;
 
 /*************************** 函数声明 *****************************/
 static void AppTaskCreate(void); 				/*用于创建任务*/
-static void LED1_Task(void *pvParameters);		/*LED_Task任务实现*/
-static void LED2_Task(void *pvParameters);		/*LED_Task任务实现*/
+static void Task_LED1(void *pvParameters);		/*LED_Task任务实现*/
+static void Task_LED2(void *pvParameters);		/*LED_Task任务实现*/
+static void Task_Key2(void *pvParameters);	/*Key_Task任务实现*/
+static void Task_Key3(void *pvParameters);	/*Key_Task任务实现*/
+static void Task_Usart(void *pvParameters);	/*Usart_Task任务实现*/
+static void Task_Test(void *pvParameters);
 static void BSP_Init(void); 					/*初始化板载相关资源*/
 
 /* 主函数
@@ -91,12 +102,12 @@ static void AppTaskCreate(void)
 	taskENTER_CRITICAL();
 
 	/*创建LED1_Task任务*/
-	xReturn = xTaskCreate((TaskFunction_t)LED1_Task,	//任务函数
-						  (const char *)"LED1_Task",	//任务名称
+	xReturn = xTaskCreate((TaskFunction_t)Task_LED1,	//任务函数
+						  (const char *)"Task_LED1",	//任务名称
 						  (uint16_t)512, 			//任务堆栈大小
 						  (void *)NULL,				//传递给任务函数的参数
 						  (UBaseType_t)2,			//任务优先级
-						  (TaskHandle_t *)&LED1_Task_Handle);	//任务控制块指针
+						  (TaskHandle_t *)&Task_Handle_LED1);	//任务控制块指针
 
 	if (pdPASS == xReturn)
 	{
@@ -108,12 +119,12 @@ static void AppTaskCreate(void)
 	}
 	
 	/*创建LED2_Task任务*/
-	xReturn = xTaskCreate((TaskFunction_t)LED2_Task,	//任务函数
-						  (const char *)"LED2_Task",	//任务名称
+	xReturn = xTaskCreate((TaskFunction_t)Task_LED2,	//任务函数
+						  (const char *)"Task_LED2",	//任务名称
 						  (uint16_t)512, 			//任务堆栈大小
 						  (void *)NULL,				//传递给任务函数的参数
 						  (UBaseType_t)3,			//任务优先级
-						  (TaskHandle_t *)&LED2_Task_Handle);	//任务控制块指针
+						  (TaskHandle_t *)&Task_Handle_LED2);	//任务控制块指针
 
 	if (pdPASS == xReturn)
 	{
@@ -122,6 +133,74 @@ static void AppTaskCreate(void)
 	else
 	{
 		printf("LED2_Task 任务创建失败!\n");
+	}
+#if 0
+	/*创建Key2_Task任务*/
+	xReturn = xTaskCreate((TaskFunction_t)Key2_Task,	//任务函数
+						  (const char *)"Key2_Task",	//任务名称
+						  (uint16_t)512, 			//任务堆栈大小
+						  (void *)NULL,				//传递给任务函数的参数
+						  (UBaseType_t)4,			//任务优先级
+						  (TaskHandle_t *)&Key2_Task_Handle);	//任务控制块指针
+
+	if (pdPASS == xReturn)
+	{
+		printf("Key2_Task 任务创建成功!\n");
+	}
+	else
+	{
+		printf("Key2_Task 任务创建失败!\n");
+	}
+
+	/*创建Key3_Task任务*/
+	xReturn = xTaskCreate((TaskFunction_t)Key3_Task,	//任务函数
+						  (const char *)"Key3_Task",	//任务名称
+						  (uint16_t)512, 			//任务堆栈大小
+						  (void *)NULL,				//传递给任务函数的参数
+						  (UBaseType_t)5,			//任务优先级
+						  (TaskHandle_t *)&Key3_Task_Handle);	//任务控制块指针
+
+	if (pdPASS == xReturn)
+	{
+		printf("Key3_Task 任务创建成功!\n");
+	}
+	else
+	{
+		printf("Key3_Task 任务创建失败!\n");
+	}
+#endif
+	/*创建Usart_Task任务*/
+	xReturn = xTaskCreate((TaskFunction_t)Task_Usart,	//任务函数
+						  (const char *)"Task_Usart",	//任务名称
+						  (uint16_t)512, 			//任务堆栈大小
+						  (void *)NULL,				//传递给任务函数的参数
+						  (UBaseType_t)6,			//任务优先级
+						  (TaskHandle_t *)&Task_Handle_Usart);	//任务控制块指针
+
+	if (pdPASS == xReturn)
+	{
+		printf("Usart_Task 任务创建成功!\n");
+	}
+	else
+	{
+		printf("Usart_Task 任务创建失败!\n");
+	}
+
+	/*创建Task_Test任务*/
+	xReturn = xTaskCreate((TaskFunction_t)Task_Test,	//任务函数
+						  (const char *)"Task_Test",	//任务名称
+						  (uint16_t)512, 			//任务堆栈大小
+						  (void *)NULL,				//传递给任务函数的参数
+						  (UBaseType_t)7,			//任务优先级
+						  (TaskHandle_t *)&Task_Handle_Test);	//任务控制块指针
+
+	if (pdPASS == xReturn)
+	{
+		printf("Task_Test 任务创建成功!\n");
+	}
+	else
+	{
+		printf("Task_Test 任务创建失败!\n");
 	}
 
 	/*删除App任务*/
@@ -132,7 +211,7 @@ static void AppTaskCreate(void)
 }
 
 /*LED1 任务测试函数*/
-static void LED1_Task(void *parameter)
+static void Task_LED1(void *parameter)
 {
 	while (1)
 	{
@@ -145,15 +224,76 @@ static void LED1_Task(void *parameter)
 }
 
 /*LED2 任务测试函数*/
-static void LED2_Task(void *parameter)
+static void Task_LED2(void *parameter)
+{
+	LED2_ON;
+	while (1)
+	{
+		vTaskDelay(1000); //延时1000个tick
+		LED2_OFF;
+
+		vTaskDelay(1000); //延时1000个tick
+		LED2_ON;
+	}
+}
+
+/*Key2 任务测试函数*/
+static void Task_Key2(void *parameter)
 {
 	while (1)
 	{
-		LED2_ON;
-		vTaskDelay(1000); //延时1000个tick
+		/*扫描KEY2*/
+		if (KEY_ON == Key_Scan(KEY2_GPIO_PORT, KEY2_GPIO_PIN))
+		{
+			printf("suspend led task\n");
+			vTaskSuspend(Task_Handle_LED2); 	//挂起单个任务
+			//vTaskSuspendAll();					//挂起所有任务
+		}
 
-		LED2_OFF;
-		vTaskDelay(1000); //延时1000个tick
+		vTaskDelay(20); //延时*个tick
+	}
+}
+
+/*Key3 任务测试函数*/
+static void Task_Key3(void *parameter)
+{
+	while (1)
+	{
+		/*扫描KEY3*/
+		if (KEY_ON == Key_Scan(KEY3_GPIO_PORT, KEY3_GPIO_PIN))
+		{
+			printf("resume led task\n");
+			vTaskResume(Task_Handle_LED2); 	//恢复单个任务
+			//vTaskSuspendAll();					//挂起所有任务
+		}
+
+		vTaskDelay(20); //延时*个tick
+	}
+}
+
+/*Usart 任务测试函数*/
+static void Task_Usart(void *parameter)
+{
+	while (1)
+	{
+		printf("Usart_Task test!\n");
+		
+		vTaskDelay(10*1000); //延时N个tick
+	}
+}
+
+/*Test 任务测试函数*/
+static void Task_Test(void *parameter)
+{
+	while (1)
+	{
+		printf("Task_Test test!\n");
+		
+		vTaskDelay(10*1000); //延时N个tick
+		vTaskSuspend(Task_Handle_LED2); 	//挂起单个任务
+
+		vTaskDelay(10*1000); //延时N个tick
+		vTaskResume(Task_Handle_LED2); 	//挂起单个任务
 	}
 }
 

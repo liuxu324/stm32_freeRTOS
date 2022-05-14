@@ -19,6 +19,8 @@
   
 #include "bsp_key.h"   
 #include "bsp_SysTick.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /**
 * @brief 检测是否有按键按下
@@ -35,7 +37,11 @@ uint8_t Key_Scan(GPIO_TypeDef* GPIOx, u16 GPIO_Pin)
 	if (GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON ) 
 	{
 		/*延时消抖,10ms*/
+		#if 1//liuxu
+		vTaskDelay(10); //延时*个tick
+		#else
 		Delay_us(10*1000);
+		#endif
 		if (GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON ) 
 		{
 			/*等待按键释放 */
@@ -81,10 +87,10 @@ void KEY_GPIO_Config(void)
 	GPIO_Init(GPIOA, &GPIO_InitStructure);	
 	
 	/*选择要控制的GPIOC引脚*/															   
-	//GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
 
 	/*调用库函数，初始化GPIOC13*/
-	//GPIO_Init(GPIOC, &GPIO_InitStructure);	 
+	GPIO_Init(GPIOC, &GPIO_InitStructure);	 
 }
 /*********************************************END OF FILE**********************/
 
