@@ -234,6 +234,15 @@ static void Task_LED2(void *parameter)
 
 		vTaskDelay(1000); //延时1000个tick
 		LED2_ON;
+
+		#if 0//vTaskDelete 函数测试
+		#elif 0
+		/*删除任务本身*/
+		vTaskDelete(NULL);
+		#else
+		/*删除其他任务*/
+		vTaskDelete(Task_Handle_LED1);
+		#endif
 	}
 }
 
@@ -289,11 +298,29 @@ static void Task_Test(void *parameter)
 	{
 		printf("Task_Test test!\n");
 		
+		#if 1
+		vTaskDelay(10*1000); //延时N个tick
+		#elif 0
+		vTaskDelay(10*1000); //延时N个tick
+		vTaskSuspendAll();
+		vTaskDelay(10*1000); //延时N个tick
+		vTaskSuspendAll();
+		vTaskDelay(10*1000); //延时N个tick
+		vTaskSuspendAll();
+
+		vTaskDelay(10*1000); //延时N个tick
+		xTaskResumeAll();
+		vTaskDelay(10*1000); //延时N个tick
+		xTaskResumeAll();
+		vTaskDelay(10*1000); //延时N个tick
+		xTaskResumeAll();
+		#else
 		vTaskDelay(10*1000); //延时N个tick
 		vTaskSuspend(Task_Handle_LED2); 	//挂起单个任务
 
 		vTaskDelay(10*1000); //延时N个tick
 		vTaskResume(Task_Handle_LED2); 	//挂起单个任务
+		#endif
 	}
 }
 
