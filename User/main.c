@@ -226,22 +226,34 @@ static void Task_LED1(void *parameter)
 /*LED2 任务测试函数*/
 static void Task_LED2(void *parameter)
 {
+	static portTickType PreviousWakeTime; //任务最后一次解除阻塞的时间，调用后系统自动更新
+	const portTickType TimeIncrement = pdMS_TO_TICKS(1000); // 设置延时时间，将时间转为节拍数
+
+	PreviousWakeTime = xTaskGetTickCount(); // 获取当前系统时间
+		 
 	LED2_ON;
 	while (1)
 	{
-		vTaskDelay(1000); //延时1000个tick
-		LED2_OFF;
-
-		vTaskDelay(1000); //延时1000个tick
-		LED2_ON;
+		#if 1
+		/*绝对延时*/
+		vTaskDelayUntil(&PreviousWakeTime, TimeIncrement);
+		#else
+		/*相对延时*/
+		vTaskDelay(1000);
+		#endif
+		LED2_TOGGLE;
 
 		#if 0//vTaskDelete 函数测试
-		#elif 0
 		/*删除任务本身*/
 		vTaskDelete(NULL);
-		#else
+		#elif 0
 		/*删除其他任务*/
-		vTaskDelete(Task_Handle_LED1);
+		if (NULL != Task_Handle_LED1)
+		{
+			vTaskDelete(Task_Handle_LED1);
+		}
+		#else
+		;
 		#endif
 	}
 }

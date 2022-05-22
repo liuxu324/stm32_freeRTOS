@@ -62,7 +62,6 @@ extern uint32_t SystemCoreClock;
 #define configTICK_RATE_HZ					((TickType_t)1000)
 
 /* 可使用的最大优先级 */
-//#define configMAX_PRIORITIES				(5)
 #define configMAX_PRIORITIES				(32)
 
 /* 空闲任务使用的堆栈大小 (字) */
@@ -105,7 +104,6 @@ extern uint32_t SystemCoreClock;
 /* 支持静态内存 */
 #define configSUPPORT_STATIC_ALLOCATION		(0)//使用动态内存时，需要置为0
 /* 系统所有总的堆大小 */
-//#define configTOTAL_HEAP_SIZE	((size_t)(17*1024))
 #define configTOTAL_HEAP_SIZE ((size_t)(36*1024)) 
 
 /*************************************************************** 
@@ -183,7 +181,6 @@ FreeRTOS 与钩子函数有关的配置选项
 #define INCLUDE_vTaskPrioritySet		(1) 
 #define INCLUDE_uxTaskPriorityGet		(1)
 #define INCLUDE_vTaskDelete				(1)
-//#define INCLUDE_vTaskCleanUpResources	(0)
 #define INCLUDE_vTaskCleanUpResources 	(1)
 #define INCLUDE_vTaskSuspend 			(1)
 #define INCLUDE_vTaskDelayUntil 		(1) 
