@@ -1,5 +1,5 @@
 /********************************************************************************
-  * @file    HCSR04 + DS18B20 + DS1302 + NRF + MLX + DS1302 + HY2615 + CAN +
+  * @file    HCSR04 + DS18B20 + DS1302 + NRF + MLX + HY2615 + DHT11 + CAN +
   *          FreeRTOS
   * @author  liu xu
   * @version V1.0
@@ -7,11 +7,16 @@
   * @node    移植FreeRTOS后，由于修改了系统时钟，自定义的精确延时函数Delay_us()暂无法使用
   ******************************************************************************/ 
 #include "stm32f10x.h"
+/*Free RTOS头文件*/
+#include "FreeRTOS.h"
+#include "task.h"
+/*bsp头文件*/
 #include "bsp_led.h"
 #include "bsp_usart1.h"
 #include "bsp_SysTick.h"
+#include "bsp_dwt.h"
 //#include "bsp_hcsr04.h"
-//#include "bsp_ds18b20.h"
+#include "bsp_rtos_ds18b20.h"
 //#include "bsp_spi_nrf.h"
 //#include "bsp_mlx90614.h"
 //#include "bsp_dht11.h"
@@ -19,9 +24,8 @@
 //#include "bsp_hy2615.h"
 #include "bsp_timer.h"
 #include "bsp_key.h"
-//#include "bsp_can.h"
-#include "FreeRTOS.h"
-#include "task.h"
+#include "bsp_can.h"
+#include "user_data_conf.h"
 
 #if 1//动态内存
 /********************** 任务句柄 *************************/
@@ -36,9 +40,12 @@ static TaskHandle_t Task_Handle_LED1 = NULL;
 static TaskHandle_t Task_Handle_LED2 = NULL;
 /*Key 任务句柄*/
 static TaskHandle_t Task_Handle_Key2 = NULL;
-static TaskHandle_t Task_Handle_Key3 = NULL;
 /*Usart 任务句柄*/
 static TaskHandle_t Task_Handle_Usart = NULL;
+/*ds18b20 任务句柄*/
+static TaskHandle_t Task_Handle_DS18B20 = NULL;
+/*CAN 任务句柄*/
+static TaskHandle_t Task_Handle_CAN = NULL;
 /*Test 任务句柄*/
 static TaskHandle_t Task_Handle_Test = NULL;
 
@@ -52,17 +59,18 @@ static TaskHandle_t Task_Handle_Test = NULL;
 /*************************** 全局变量声明 *************************/
 
 /*************************** 函数声明 *****************************/
-static void AppTaskCreate(void); 				/*用于创建任务*/
-static void Task_LED1(void *pvParameters);		/*LED_Task任务实现*/
-static void Task_LED2(void *pvParameters);		/*LED_Task任务实现*/
+static void AppTaskCreate(void);				/*用于创建任务*/
+static void Task_LED1(void *pvParameters);	/*LED_Task任务实现*/
+static void Task_LED2(void *pvParameters);	/*LED_Task任务实现*/
 static void Task_Key2(void *pvParameters);	/*Key_Task任务实现*/
-static void Task_Key3(void *pvParameters);	/*Key_Task任务实现*/
 static void Task_Usart(void *pvParameters);	/*Usart_Task任务实现*/
 static void Task_Test(void *pvParameters);
-static void BSP_Init(void); 					/*初始化板载相关资源*/
+static void Task_DS18B20(void *pvParameters);
+static void Task_CAN(void *pvParameters);
+static void BSP_Init(void);	/*初始化板载相关资源*/
 
 /* 主函数
- * 1：硬件初始化；2：创建APP应用任务；3：启动FreeTRTOS，开始多任务调度
+ * 1：硬件初始化；2：创建APP应用任务；3：启动FreeRTOS，开始多任务调度
  */
 int main(void)
 {	
@@ -77,7 +85,7 @@ int main(void)
 						  (const char *)"AppTaskCreate",	//任务名称
 						  (uint16_t)512,					//任务堆栈大小
 						  (void *)NULL,						//传递给任务的参数
-						  (UBaseType_t)1,					//任务优先级
+						  (UBaseType_t)TASK_PRI_APP,		//任务优先级
 						  (TaskHandle_t *)&AppTaskCreate_Handle);	//任务控制块指针
 	if (pdPASS == xReturn)
 	{
@@ -86,6 +94,7 @@ int main(void)
 	}
 	else
 	{
+		printf("AppTaskCreate error\n");
 		return -1;
 	}
 
@@ -104,9 +113,9 @@ static void AppTaskCreate(void)
 	/*创建LED1_Task任务*/
 	xReturn = xTaskCreate((TaskFunction_t)Task_LED1,	//任务函数
 						  (const char *)"Task_LED1",	//任务名称
-						  (uint16_t)512, 			//任务堆栈大小
-						  (void *)NULL,				//传递给任务函数的参数
-						  (UBaseType_t)2,			//任务优先级
+						  (uint16_t)512, 				//任务堆栈大小
+						  (void *)NULL,					//传递给任务函数的参数
+						  (UBaseType_t)TASK_PRI_LED1,	//任务优先级
 						  (TaskHandle_t *)&Task_Handle_LED1);	//任务控制块指针
 
 	if (pdPASS == xReturn)
@@ -121,9 +130,9 @@ static void AppTaskCreate(void)
 	/*创建LED2_Task任务*/
 	xReturn = xTaskCreate((TaskFunction_t)Task_LED2,	//任务函数
 						  (const char *)"Task_LED2",	//任务名称
-						  (uint16_t)512, 			//任务堆栈大小
-						  (void *)NULL,				//传递给任务函数的参数
-						  (UBaseType_t)3,			//任务优先级
+						  (uint16_t)512, 				//任务堆栈大小
+						  (void *)NULL,					//传递给任务函数的参数
+						  (UBaseType_t)TASK_PRI_LED2,	//任务优先级
 						  (TaskHandle_t *)&Task_Handle_LED2);	//任务控制块指针
 
 	if (pdPASS == xReturn)
@@ -134,14 +143,15 @@ static void AppTaskCreate(void)
 	{
 		printf("LED2_Task 任务创建失败!\n");
 	}
+	
 #if 0
 	/*创建Key2_Task任务*/
-	xReturn = xTaskCreate((TaskFunction_t)Key2_Task,	//任务函数
-						  (const char *)"Key2_Task",	//任务名称
+	xReturn = xTaskCreate((TaskFunction_t)Task_Key2,	//任务函数
+						  (const char *)"Task_Key2",	//任务名称
 						  (uint16_t)512, 			//任务堆栈大小
 						  (void *)NULL,				//传递给任务函数的参数
 						  (UBaseType_t)4,			//任务优先级
-						  (TaskHandle_t *)&Key2_Task_Handle);	//任务控制块指针
+						  (TaskHandle_t *)&Task_Handle_Key2);	//任务控制块指针
 
 	if (pdPASS == xReturn)
 	{
@@ -151,30 +161,14 @@ static void AppTaskCreate(void)
 	{
 		printf("Key2_Task 任务创建失败!\n");
 	}
-
-	/*创建Key3_Task任务*/
-	xReturn = xTaskCreate((TaskFunction_t)Key3_Task,	//任务函数
-						  (const char *)"Key3_Task",	//任务名称
-						  (uint16_t)512, 			//任务堆栈大小
-						  (void *)NULL,				//传递给任务函数的参数
-						  (UBaseType_t)5,			//任务优先级
-						  (TaskHandle_t *)&Key3_Task_Handle);	//任务控制块指针
-
-	if (pdPASS == xReturn)
-	{
-		printf("Key3_Task 任务创建成功!\n");
-	}
-	else
-	{
-		printf("Key3_Task 任务创建失败!\n");
-	}
 #endif
+#if 0
 	/*创建Usart_Task任务*/
 	xReturn = xTaskCreate((TaskFunction_t)Task_Usart,	//任务函数
 						  (const char *)"Task_Usart",	//任务名称
-						  (uint16_t)512, 			//任务堆栈大小
-						  (void *)NULL,				//传递给任务函数的参数
-						  (UBaseType_t)6,			//任务优先级
+						  (uint16_t)512, 				//任务堆栈大小
+						  (void *)NULL,					//传递给任务函数的参数
+						  (UBaseType_t)TASK_PRI_USART,	//任务优先级
 						  (TaskHandle_t *)&Task_Handle_Usart);	//任务控制块指针
 
 	if (pdPASS == xReturn)
@@ -184,8 +178,9 @@ static void AppTaskCreate(void)
 	else
 	{
 		printf("Usart_Task 任务创建失败!\n");
-	}
-
+	}	
+#endif
+#if 0
 	/*创建Task_Test任务*/
 	xReturn = xTaskCreate((TaskFunction_t)Task_Test,	//任务函数
 						  (const char *)"Task_Test",	//任务名称
@@ -202,6 +197,45 @@ static void AppTaskCreate(void)
 	{
 		printf("Task_Test 任务创建失败!\n");
 	}
+#endif
+
+#if 1//DS18B20
+	/*创建Task_DS18B20任务*/
+	xReturn = xTaskCreate((TaskFunction_t)Task_DS18B20,	//任务函数
+						  (const char *)"Task_DS18B20",	//任务名称
+						  (uint16_t)512,				//任务堆栈大小
+						  (void *)NULL, 				//传递给任务函数的参数
+						  (UBaseType_t)TASK_PRI_DS18B20,//任务优先级
+						  (TaskHandle_t *)&Task_Handle_DS18B20);	//任务控制块指针
+
+	if (pdPASS == xReturn)
+	{
+		printf("Task_DS18B20 任务创建成功!\n");
+	}
+	else
+	{
+		printf("Task_DS18B20 任务创建失败!\n");
+	}
+#endif
+	
+#if 1//CAN
+	/*创建Task_CAN任务*/
+	xReturn = xTaskCreate((TaskFunction_t)Task_CAN,	//任务函数
+						  (const char *)"Task_CAN",	//任务名称
+						  (uint16_t)512,				//任务堆栈大小
+						  (void *)NULL, 				//传递给任务函数的参数
+						  (UBaseType_t)TASK_PRI_CAN,//任务优先级
+						  (TaskHandle_t *)&Task_Handle_CAN);	//任务控制块指针
+
+	if (pdPASS == xReturn)
+	{
+		printf("Task_CAN 任务创建成功!\n");
+	}
+	else
+	{
+		printf("Task_CAN 任务创建失败!\n");
+	}
+#endif
 
 	/*删除App任务*/
 	vTaskDelete(AppTaskCreate_Handle);
@@ -215,11 +249,9 @@ static void Task_LED1(void *parameter)
 {
 	while (1)
 	{
-		LED1_ON;
-		vTaskDelay(500); //延时500个tick
-
-		LED1_OFF;
-		vTaskDelay(500); //延时500个tick
+		LED1_TOGGLE;
+		vTaskDelay(2*1000); //延时N个tick
+		//dwt_delay_ms(1*1000);
 	}
 }
 
@@ -239,7 +271,7 @@ static void Task_LED2(void *parameter)
 		vTaskDelayUntil(&PreviousWakeTime, TimeIncrement);
 		#else
 		/*相对延时*/
-		vTaskDelay(1000);
+		vTaskDelay(500);
 		#endif
 		LED2_TOGGLE;
 
@@ -258,7 +290,7 @@ static void Task_LED2(void *parameter)
 	}
 }
 
-/*Key2 任务测试函数*/
+/*Key 任务测试函数*/
 static void Task_Key2(void *parameter)
 {
 	while (1)
@@ -267,25 +299,15 @@ static void Task_Key2(void *parameter)
 		if (KEY_ON == Key_Scan(KEY2_GPIO_PORT, KEY2_GPIO_PIN))
 		{
 			printf("suspend led task\n");
-			vTaskSuspend(Task_Handle_LED2); 	//挂起单个任务
+			vTaskSuspend(Task_Handle_LED1); 	//挂起单个任务
 			//vTaskSuspendAll();					//挂起所有任务
 		}
-
-		vTaskDelay(20); //延时*个tick
-	}
-}
-
-/*Key3 任务测试函数*/
-static void Task_Key3(void *parameter)
-{
-	while (1)
-	{
 		/*扫描KEY3*/
 		if (KEY_ON == Key_Scan(KEY3_GPIO_PORT, KEY3_GPIO_PIN))
 		{
 			printf("resume led task\n");
-			vTaskResume(Task_Handle_LED2); 	//恢复单个任务
-			//vTaskSuspendAll();					//挂起所有任务
+			vTaskResume(Task_Handle_LED1); 	//恢复单个任务
+			//xTaskResumeAll();					//恢复所有任务
 		}
 
 		vTaskDelay(20); //延时*个tick
@@ -299,7 +321,35 @@ static void Task_Usart(void *parameter)
 	{
 		printf("Usart_Task test!\n");
 		
-		vTaskDelay(10*1000); //延时N个tick
+		#if 1
+		vTaskDelay(5*1000); //延时N个tick
+		#else
+		dwt_delay_ms(5*1000);
+		//dwt_delay_us(5*1000*1000);
+		#endif
+	}
+}
+
+/*ds18b20 任务函数*/
+static void Task_DS18B20(void *parameter)
+{
+	while (1)
+	{
+		printf("DS18B20-Temperture = %.2f\n", DS18B20_rtos_Get_Temp());// 打印温度
+		
+		vTaskDelay(5*1000); //延时N个tick
+	}
+}
+
+/*CAN 任务函数*/
+static void Task_CAN(void *parameter)
+{
+	while (1)
+	{
+		printf("CAN TEST\n");
+		CAN_Test();
+		
+		vTaskDelay(5*1000); //延时N个tick
 	}
 }
 
@@ -339,6 +389,7 @@ static void Task_Test(void *parameter)
 /*板级外设初始化*/
 static void BSP_Init(void)
 {
+	dwt_delay_init();				// 初始化 dwt
 	/* 
 	 * STM32 中断优先级分组为 4，即 4bit 都用来表示抢占优先级，范围为：0~15 
 	 * 优先级分组只需要分组一次即可，以后如果有其他的任务需要用到中断， 
@@ -350,18 +401,20 @@ static void BSP_Init(void)
 	KEY_GPIO_Config();		        // 初始化 KEY端口 
 	USART1_Config();				// 初始化 串口
 	SysTick_Init();	               	// 配置系统时钟为1us中断一次 
-	TIM6_Init();	               	// 初始化 TIM6 
+	TIM6_Init();	               	// 初始化 TIM6
 	//HCSR04_Init();				// 初始化 HCSR04
-	//DS18B20_Init();				// 初始化 DS18B20
+	DS18B20_rtos_Init();			// 初始化 DS18B20
 	//SPI_NRF_Init();	            // 初始化 NRF 
 	//SPI_NRF2_Init();	            // 初始化 NRF2 
 	//SMBus_Init();					// 初始化 SMBus总线(mlx90614)
 	//DHT11_GPIO_Config();		    // 初始化 DHT11端口 
 	//DS1302_Init();	
 	//HY2615_Init(); 				// 初始化 HY2615 IIC
-	//CAN_Config(); 				// 初始化 CAN   测试函数接口：CAN_Test()
+	CAN_Config(); 				// 初始化 CAN   测试函数接口：CAN_Test()
 }
-#else //静态内存
+#endif
+
+#if 0//静态内存
 /********************** 任务句柄 *************************/
 /*
  * 任务句柄是一个指针，用于指向一个任务，当任务创建好之后，它就具有了一个任务句柄。

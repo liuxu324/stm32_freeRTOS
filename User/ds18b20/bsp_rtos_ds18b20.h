@@ -1,5 +1,5 @@
-#ifndef __DS18B20_H
-#define	__DS18B20_H
+#ifndef __DS18B20_RTOS_H
+#define	__DS18B20_RTOS_H
 
 #include "stm32f10x.h"
 
@@ -19,12 +19,10 @@
 /*****读取引脚电平*****/
 #define DS18B20_DATA_IN()	GPIO_ReadInputDataBit(DS18B20_PORT, DS18B20_DQ)
 
-uint8_t DS18B20_Init(void);
-void DS18B20_Write_Byte(uint8_t dat);
-uint8_t DS18B20_Read_Byte(void);
-float DS18B20_Get_Temp(void);
+uint8_t DS18B20_rtos_Init(void);
+float DS18B20_rtos_Get_Temp(void);
 
-void DS18B20_test(void);
+void DS18B20_rtos_test(void);
 
-#endif /* __DS18B20_H */
+#endif /* __DS18B20_RTOS_H */
 

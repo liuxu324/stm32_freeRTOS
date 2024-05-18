@@ -1,10 +1,9 @@
 /********************************************************************************
-  * @file    调试DS18B20
+  * @file    调试rtos下DS18B20 注：主要修改us延时函数
   * @author  liu xu
-  * @date    2017-11-12
+  * @date    2023-02-05
   ******************************************************************************/ 
-#include "bsp_ds18b20.h"
-#include "bsp_SysTick.h"
+#include "bsp_rtos_ds18b20.h"
 
 static uint8_t ds18b20_id[8] = {0x28, 0x47, 0x23, 0x10, 0x04, 0x00, 0x00, 0xfe};
 
@@ -49,11 +48,13 @@ static void DS18B20_Rst(void)
 {
 	DS18B20_Mode_Out_PP();	//主机 -- 推挽输出			
 
-	DS18B20_DATA_OUT(LOW);				
-	Delay_us(500);	
+	DS18B20_DATA_OUT(LOW);			
+	//Delay_us(500);
+	dwt_delay_us(500);
 
 	DS18B20_DATA_OUT(HIGH);				
-	Delay_us(15);
+	//Delay_us(15);
+	dwt_delay_us(15);
 }
 
 /** @brief  DS18B20_检测从机的返回状态
@@ -67,7 +68,8 @@ static uint8_t DS18B20_Presence(void)
 	while (DS18B20_DATA_IN() && pulse_time<100)
 	{
 		pulse_time++;
-		Delay_us(1);		
+		//Delay_us(1);
+		dwt_delay_us(1);
 	}
 	
 	if (pulse_time>=100)	//100us后，存在脉冲还未到来（总线上没有DS18B20）
@@ -82,7 +84,8 @@ static uint8_t DS18B20_Presence(void)
 	while (!DS18B20_DATA_IN() && pulse_time<240) //存在脉冲（低），且<240us
 	{
 		pulse_time++;
-		Delay_us(1);		
+		//Delay_us(1);
+		dwt_delay_us(1);
 	}
 	
 	if (pulse_time>=240)
@@ -96,7 +99,7 @@ static uint8_t DS18B20_Presence(void)
 }
 
 /*** @brief  DS18B20_初始化 ***/
-uint8_t DS18B20_Init(void)
+uint8_t DS18B20_rtos_Init(void)
 {
 	DS18B20_GPIO_Config();   
 	DS18B20_Rst();
@@ -108,7 +111,7 @@ uint8_t DS18B20_Init(void)
   * 写0：在[1us,120us]内拉低
 	* 写1：在[1us,15us]内拉高
 ***/
-void DS18B20_Write_Byte(uint8_t dat)	
+static void DS18B20_Write_Byte(uint8_t dat)	
 {
 	uint8_t i, testb;
 	
@@ -120,24 +123,28 @@ void DS18B20_Write_Byte(uint8_t dat)
 		if (testb)            //总时间>60us
 		{
 			DS18B20_DATA_OUT(LOW);				
-			Delay_us(8);	      //1us<时间<15us
-	
+			//Delay_us(8);	      //1us<时间<15us
+			dwt_delay_us(8);
+		
 			DS18B20_DATA_OUT(HIGH);				
-			Delay_us(60);
+			//Delay_us(60);
+			dwt_delay_us(60);
 		}
 		else
 		{
 			DS18B20_DATA_OUT(LOW);				
-			Delay_us(70);	     //60us<Tx<120us
-	
+			//Delay_us(70);	     //60us<Tx<120us
+			dwt_delay_us(70);
+			
 			DS18B20_DATA_OUT(HIGH);				
-			Delay_us(2);       //Tx>1us
+			//Delay_us(2);       //Tx>1us
+			dwt_delay_us(2);
 		}
 	}
 }
 
 /*** @brief  从DS18B20读字节--低位先行 ***/
-uint8_t DS18B20_Read_Byte(void)	
+static uint8_t DS18B20_Read_Byte(void)	
 {
 	uint8_t i, dat = 0;
 	
@@ -147,16 +154,23 @@ uint8_t DS18B20_Read_Byte(void)
 		
 		DS18B20_Mode_Out_PP();	//主机 -- 推挽输出			
 		DS18B20_DATA_OUT(LOW);				
-		Delay_us(6);
+		//Delay_us(6);
+		dwt_delay_us(6);
 		DS18B20_DATA_OUT(HIGH);		
-		Delay_us(2);
-		
+		//Delay_us(2);
+		dwt_delay_us(2);
+			
 		DS18B20_Mode_IPU();	    //主机 -- 上拉输入		
 		if (DS18B20_DATA_IN())
+		{
 			dat |= 0x80;
+		}
 		else 
+		{
 			dat &= 0x7f;
-		Delay_us(8);
+		}
+		//Delay_us(8);
+		dwt_delay_us(8);
 	}
 	DS18B20_Mode_Out_PP();	//主机 -- 推挽输出			
 	DS18B20_DATA_OUT(HIGH);		
@@ -167,7 +181,7 @@ uint8_t DS18B20_Read_Byte(void)
 /** @brief  获取温度
   * @retval 写/读寄存器 
 ***/
-float DS18B20_Get_Temp(void)
+float DS18B20_rtos_Get_Temp(void)
 {
 	uint8_t tp_h = 0, tp_l = 0, i = 0, j = 0;
 	short s_tem = 0;
@@ -198,18 +212,25 @@ float DS18B20_Get_Temp(void)
 		s_tem = tp_h << 8;
 		s_tem = s_tem | tp_l;
 	
-		if (s_tem<0)	f_tem = (~s_tem+1) * 0.0625;//负温度
-		else	f_tem = s_tem * 0.0625;
-
+		if (s_tem<0)
+		{
+			f_tem = (~s_tem+1) * 0.0625;//负温度
+		}
+		else
+		{
+			f_tem = s_tem * 0.0625;
+		}
+		printf("f_tem = %.2f\n", f_tem);
 		sum += f_tem;
 		j++;
 	}
 	
+	printf("sum = %.2f\n", sum);
 	return (sum / 5.0);
 }
 
 #if 0//test demo
-void DS18B20_test(void)
+void DS18B20_rtos_test(void)
 {
 	printf("\nDS18B20-Temperture = %.2f\n", DS18B20_Get_Temp());// 打印温度
 }

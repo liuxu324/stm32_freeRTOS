@@ -118,10 +118,10 @@ void CAN_Config(void)
 void CAN_SetMsg(void)
 {
 	//TxMessage.StdId=0x00;
-	TxMessage.ExtId=0x1314;		//使用的扩展ID
+	TxMessage.ExtId=0x1314;			//使用的扩展ID
 	TxMessage.IDE=CAN_ID_EXT; 	//扩展模式
 	TxMessage.RTR=CAN_RTR_DATA; //发送的是数据
-	TxMessage.DLC=2; 			//数据长度 2 字节
+	TxMessage.DLC=2; 						//数据长度 2 字节
 	TxMessage.Data[0]=0xAB;
 	TxMessage.Data[1]=0xCD;
 }
