@@ -17,6 +17,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#define CAN_STD (1)
+
 extern volatile unsigned char can_flag;
 
 extern uint16_t ms_HCSR04_Count;
@@ -34,8 +36,13 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 	CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);
 
 	/* 比较数据和 ID */
+#if CAN_STD
+	if ((RxMessage.StdId == 0x100) && (RxMessage.IDE == CAN_ID_STD) 
+	 && (RxMessage.DLC == 2) && ((RxMessage.Data[1]|RxMessage.Data[0]<<8) == 0xABCD)) 
+#else
 	if ((RxMessage.ExtId == 0x1314) && (RxMessage.IDE == CAN_ID_EXT) 
 	 && (RxMessage.DLC == 2) && ((RxMessage.Data[1]|RxMessage.Data[0]<<8) == 0xABCD)) 
+#endif
 	{
 		can_flag = 0; //接收成功
 	} 

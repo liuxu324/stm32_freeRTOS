@@ -4,6 +4,8 @@
   * @date    2023-02-05
   ******************************************************************************/ 
 #include "bsp_rtos_ds18b20.h"
+#include "bsp_dwt.h"
+#include <stdio.h>
 
 static uint8_t ds18b20_id[8] = {0x28, 0x47, 0x23, 0x10, 0x04, 0x00, 0x00, 0xfe};
 

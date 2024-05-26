@@ -16,7 +16,7 @@
 #include "bsp_SysTick.h"
 #include "bsp_dwt.h"
 //#include "bsp_hcsr04.h"
-#include "bsp_rtos_ds18b20.h"
+//#include "bsp_rtos_ds18b20.h"
 //#include "bsp_spi_nrf.h"
 //#include "bsp_mlx90614.h"
 //#include "bsp_dht11.h"
@@ -199,7 +199,7 @@ static void AppTaskCreate(void)
 	}
 #endif
 
-#if 1//DS18B20
+#if 0//DS18B20
 	/*创建Task_DS18B20任务*/
 	xReturn = xTaskCreate((TaskFunction_t)Task_DS18B20,	//任务函数
 						  (const char *)"Task_DS18B20",	//任务名称
@@ -349,7 +349,7 @@ static void Task_CAN(void *parameter)
 		printf("CAN TEST\n");
 		CAN_Test();
 		
-		vTaskDelay(5*1000); //延时N个tick
+		vTaskDelay(10*1000); //延时N个tick
 	}
 }
 
@@ -403,14 +403,14 @@ static void BSP_Init(void)
 	SysTick_Init();	               	// 配置系统时钟为1us中断一次 
 	TIM6_Init();	               	// 初始化 TIM6
 	//HCSR04_Init();				// 初始化 HCSR04
-	DS18B20_rtos_Init();			// 初始化 DS18B20
+	//DS18B20_rtos_Init();			// 初始化 DS18B20
 	//SPI_NRF_Init();	            // 初始化 NRF 
 	//SPI_NRF2_Init();	            // 初始化 NRF2 
 	//SMBus_Init();					// 初始化 SMBus总线(mlx90614)
 	//DHT11_GPIO_Config();		    // 初始化 DHT11端口 
 	//DS1302_Init();	
 	//HY2615_Init(); 				// 初始化 HY2615 IIC
-	CAN_Config(); 				// 初始化 CAN   测试函数接口：CAN_Test()
+	CAN_Config(); 				// 初始化 CAN 测试函数接口：CAN_Test()
 }
 #endif
 
