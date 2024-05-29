@@ -50,7 +50,7 @@ static void CAN_Mode_Config(void)
 #else
 	CAN_InitStructure.CAN_Mode = CAN_Mode_LoopBack;	//CAN_Mode_Normal-正常模式;CAN_Mode_LoopBack-回环模式
 #endif
-	CAN_InitStructure.CAN_SJW = CAN_SJW_1tq; 	//BTR-SJW 重新同步跳跃时间宽度2个时间单元
+	CAN_InitStructure.CAN_SJW = CAN_SJW_2tq; 	//BTR-SJW 重新同步跳跃时间宽度2个时间单元
 	
 #if 0//
 	CAN_InitStructure.CAN_BS1 = CAN_BS1_6tq; 	//BTR-TS1 时间段1占用6个时间单元
@@ -59,7 +59,7 @@ static void CAN_Mode_Config(void)
 #else
 	CAN_InitStructure.CAN_BS1 = CAN_BS1_3tq; 	//BTR-TS1 时间段1占用6个时间单元
 	CAN_InitStructure.CAN_BS2 = CAN_BS2_2tq; 	//BTR-TS1 时间段2占用3个时间单元
-	CAN_InitStructure.CAN_Prescaler = 12; 			//BTR-BRP 波特率分频器 时间长：36/(1+3+2)/12=0.5Mbps
+	CAN_InitStructure.CAN_Prescaler = 12; 		//BTR-BRP 波特率分频器 时间长：36/(1+3+2)/12=0.5Mbps
 #endif
 CAN_Init(CAN1, &CAN_InitStructure);   
 }
@@ -72,21 +72,21 @@ static void CAN_Filter_Config(void)
 	CAN_FilterInitTypeDef CAN_FilterInitStructure;
 
 	/*CAN 过滤器初始化*/
-	CAN_FilterInitStructure.CAN_FilterNumber=0;	//过滤器组 0
-	CAN_FilterInitStructure.CAN_FilterMode=CAN_FilterMode_IdMask;	//工作在标识符屏蔽位模式
-	CAN_FilterInitStructure.CAN_FilterScale=CAN_FilterScale_32bit;	//位宽为单个 32位
+	CAN_FilterInitStructure.CAN_FilterNumber = 0;										//过滤器组 0
+	CAN_FilterInitStructure.CAN_FilterMode = CAN_FilterMode_IdMask;	//工作在标识符屏蔽位模式
+	CAN_FilterInitStructure.CAN_FilterScale = CAN_FilterScale_32bit;//位宽为单个 32位
 	
 	/*按照标识符的内容进行比对过滤*/
 	
 #if CAN_STD//标准数据帧
-	CAN_FilterInitStructure.CAN_FilterIdHigh = (((u32)0x1314<<21)&0xFFFF0000)>>16;
-	CAN_FilterInitStructure.CAN_FilterIdLow = (((u32)0x1314<<21)|CAN_ID_STD|CAN_RTR_DATA)&0xFFFF;	//要过滤 ID 的底位
+	CAN_FilterInitStructure.CAN_FilterIdHigh = (((u32)0x12<<21)&0xFFFF0000)>>16;									//要过滤 ID 的高位
+	CAN_FilterInitStructure.CAN_FilterIdLow = (((u32)0x1314<<21)|CAN_ID_STD|CAN_RTR_DATA)&0xFFFF;	//要过滤 ID 的低位
 #else//扩展数据帧
-	CAN_FilterInitStructure.CAN_FilterIdHigh=(((u32)0x1314<<3)&0xFFFF0000)>>16;	//要过滤 ID 的高位
-	CAN_FilterInitStructure.CAN_FilterIdLow=(((u32)0x1314<<3)|CAN_ID_EXT|CAN_RTR_DATA)&0xFFFF;	//要过滤 ID 的底位
+	CAN_FilterInitStructure.CAN_FilterIdHigh=(((u32)0x1314<<3)&0xFFFF0000)>>16;									//要过滤 ID 的高位
+	CAN_FilterInitStructure.CAN_FilterIdLow=(((u32)0x1314<<3)|CAN_ID_EXT|CAN_RTR_DATA)&0xFFFF;	//要过滤 ID 的低位
 #endif
 	CAN_FilterInitStructure.CAN_FilterMaskIdHigh = 0xFFFF;	//过滤器高 16 位
-	CAN_FilterInitStructure.CAN_FilterMaskIdLow = 0xFFFF;	//过滤器低 16 位
+	CAN_FilterInitStructure.CAN_FilterMaskIdLow = 0xFFFF;		//过滤器低 16 位
 	CAN_FilterInitStructure.CAN_FilterFIFOAssignment = CAN_Filter_FIFO0;	//过滤器被关联到 FIFO0
 	CAN_FilterInitStructure.CAN_FilterActivation = ENABLE;	//使能过滤器
 	CAN_FilterInit(&CAN_FilterInitStructure);
@@ -138,14 +138,14 @@ void CAN_Config(void)
 void CAN_SetMsg(void)
 {
 #if CAN_STD
-	TxMessage.StdId = 0x100;
+	TxMessage.StdId = 0x12;
 	TxMessage.IDE = CAN_ID_STD;
 #else
-	TxMessage.ExtId=0x1314;			//使用的扩展ID
-	TxMessage.IDE=CAN_ID_EXT; 	//扩展模式
+	TxMessage.ExtId = 0x1314;				//使用的扩展ID
+	TxMessage.IDE = CAN_ID_EXT; 		//扩展模式
 #endif	
-	TxMessage.RTR = CAN_RTR_DATA; //发送的是数据
-	TxMessage.DLC = 2; 						//数据长度 2 字节
+	TxMessage.RTR = CAN_RTR_DATA; 	//发送的是数据
+	TxMessage.DLC = 2; 							//数据长度 2 字节
 	TxMessage.Data[0] = 0xAB;
 	TxMessage.Data[1] = 0xCD;
 }
@@ -159,9 +159,9 @@ void CAN_Test(void)
 	
 	printf( "\r\n***** CAN 发送报文内容: ********");
 #if CAN_STD
-	printf( "\r\n***** CAN 标准ID号: 0x%x, 数据段内容:Data[0]=0x%x, Data[1]=0x%x\r\n", TxMessage.StdId, TxMessage.Data[0], TxMessage.Data[1]);
+	printf( "\r\n***** CAN 标准ID号: 0x%x, 数据段内容: Data[0]=0x%x, Data[1]=0x%x\r\n", TxMessage.StdId, TxMessage.Data[0], TxMessage.Data[1]);
 #else
-	printf( "\r\n***** CAN 扩展ID号: 0x%x, 数据段内容:Data[0]=0x%x, Data[1]=0x%x\r\n", TxMessage.ExtId, TxMessage.Data[0], TxMessage.Data[1]);
+	printf( "\r\n***** CAN 扩展ID号: 0x%x, 数据段内容: Data[0]=0x%x, Data[1]=0x%x\r\n", TxMessage.ExtId, TxMessage.Data[0], TxMessage.Data[1]);
 #endif
 	/* 发送消息 “ABCD” */
 	CAN_Transmit(CAN1, &TxMessage);
@@ -173,7 +173,7 @@ void CAN_Test(void)
 #if CAN_STD
 	printf( "\r\n***** CAN 标准ID号: 0x%x, 数据段内容: Data[0]=0x%x, Data[1]=0x%x \r\n", RxMessage.StdId, RxMessage.Data[0], RxMessage.Data[1]);
 #else
-	printf( "\r\n***** CAN 扩展ID号: 0x%x, 数据段内容: Data[0]=0x%x,Data[1]=0x%x \r\n", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1]);
+	printf( "\r\n***** CAN 扩展ID号: 0x%x, 数据段内容: Data[0]=0x%x, Data[1]=0x%x \r\n", RxMessage.ExtId, RxMessage.Data[0], RxMessage.Data[1]);
 #endif
 }
 /*********************************************END OF FILE**********************/

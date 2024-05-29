@@ -330,6 +330,7 @@ static void Task_Usart(void *parameter)
 	}
 }
 
+#if 0
 /*ds18b20 任务函数*/
 static void Task_DS18B20(void *parameter)
 {
@@ -340,6 +341,7 @@ static void Task_DS18B20(void *parameter)
 		vTaskDelay(5*1000); //延时N个tick
 	}
 }
+#endif
 
 /*CAN 任务函数*/
 static void Task_CAN(void *parameter)

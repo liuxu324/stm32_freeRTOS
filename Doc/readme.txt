@@ -3,7 +3,7 @@
 ** add ：FreeRTOS V9.0.0
 
 ** date：2022-4-19
-** add ：can
+** add ：CAN 标准帧、扩展帧数据发送测试，PCAN-View数据接收测试
 
 ** date：2022-2-8
 ** add ：lcd

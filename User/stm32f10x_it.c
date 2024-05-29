@@ -37,11 +37,9 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 
 	/* 比较数据和 ID */
 #if CAN_STD
-	if ((RxMessage.StdId == 0x100) && (RxMessage.IDE == CAN_ID_STD) 
-	 && (RxMessage.DLC == 2) && ((RxMessage.Data[1]|RxMessage.Data[0]<<8) == 0xABCD)) 
+	if ((RxMessage.StdId == 0x12) && (RxMessage.IDE == CAN_ID_STD) && (RxMessage.DLC == 2))
 #else
-	if ((RxMessage.ExtId == 0x1314) && (RxMessage.IDE == CAN_ID_EXT) 
-	 && (RxMessage.DLC == 2) && ((RxMessage.Data[1]|RxMessage.Data[0]<<8) == 0xABCD)) 
+	if ((RxMessage.ExtId == 0x1314) && (RxMessage.IDE == CAN_ID_EXT) && (RxMessage.DLC == 2))
 #endif
 	{
 		can_flag = 0; //接收成功
